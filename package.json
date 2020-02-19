@@ -48,25 +48,24 @@
   "author": "Daniel Durante <me@danieldurante.com>",
   "license": "MIT",
   "dependencies": {
-    "async": "^2.1.5",
-    "eslint": "^4.3.0",
+    "async": "^3.1.1",
+    "eslint": "^6.8.0",
     "graceful-fs-extra": "^2.0.0",
-    "mkdirp": "^0.5.1",
-    "sequelize": "^3.30.2",
-    "yargs": "^8.0.1"
+    "sequelize": "^5.21.4",
+    "yargs": "^15.1.0"
   },
   "devDependencies": {
-    "chai": "^4.0.1",
-    "cross-env": "^5.0.0",
+    "chai": "^4.2.0",
+    "cross-env": "^7.0.0",
     "istanbul": "^0.4.5",
     "lcov-result-merger": "^1.2.0",
-    "mkdirp": "^0.5.1",
-    "mocha": "^4.0.0",
-    "mysql": "^2.13.0",
-    "nyc": "^11.0.1",
-    "pg": "^6.1.5",
-    "pg-hstore": "^2.3.2",
+    "mkdirp": "^1.0.3",
+    "mocha": "^7.0.1",
+    "mysql": "^2.18.1",
+    "nyc": "^15.0.0",
+    "pg": "^7.18.1",
+    "pg-hstore": "^2.3.3",
     "sqlite3": "^3.1.8",
-    "tedious": "^2.0.0"
+    "tedious": "^8.0.1"
   }
 }
