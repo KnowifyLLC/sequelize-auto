@@ -110,17 +110,20 @@ export class AutoGenerator {
       const [schemaName, tableNameOrig] = qNameSplit(table);
       const tableName = makeTableName(this.options.caseModel, tableNameOrig, this.options.singularize, this.options.lang);
 
-      if (this.options.lang === 'ts' && !this.options.noAssociations) {
-        const associations = this.addTypeScriptAssociationMixins(table);
-        const needed = _.keys(associations.needed).sort();
-        needed.forEach(fkTable => {
-          const set = associations.needed[fkTable];
-          const [fkSchema, fkTableName] = qNameSplit(fkTable);
-          const filename = recase(this.options.caseFile, fkTableName, this.options.singularize);
-          str += 'import type { ';
-          str += Array.from(set.values()).sort().join(', ');
-          str += ` } from './${filename}';\n`;
-        });
+      if (this.options.lang === 'ts') {
+        let associations: any;
+        if (!this.options.noAssociations) {
+          associations = this.addTypeScriptAssociationMixins(table);
+          const needed = _.keys(associations.needed).sort();
+          needed.forEach(fkTable => {
+            const set = associations.needed[fkTable];
+            const [fkSchema, fkTableName] = qNameSplit(fkTable);
+            const filename = recase(this.options.caseFile, fkTableName, this.options.singularize);
+            str += 'import type { ';
+            str += Array.from(set.values()).sort().join(', ');
+            str += ` } from './${filename}';\n`;
+          });
+        }
 
         str += "\nexport interface #TABLE#Attributes {\n";
         str += this.addTypeScriptFields(table, true) + "}\n\n";
@@ -143,7 +146,9 @@ export class AutoGenerator {
 
         str += `export class #TABLE# extends ${this.options.baseModelName || 'Model'}<#TABLE#Attributes, #TABLE#CreationAttributes> implements #TABLE#Attributes {\n`;
         str += this.addTypeScriptFields(table, false);
-        str += "\n" + associations.str;
+        if (!this.options.noAssociations) {
+          str += "\n" + associations.str;
+        }
         str += "\n" + this.space[1] + "static initModel(sequelize: Sequelize.Sequelize): typeof #TABLE# {\n";
 
         if (this.options.useDefine) {
