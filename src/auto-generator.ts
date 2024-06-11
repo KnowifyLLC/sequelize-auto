@@ -155,7 +155,7 @@ export class AutoGenerator {
           str += this.space[2] + "return sequelize.define('#TABLE#', {\n";
 
         } else {
-          str += this.space[2] + "return #TABLE#.init({\n";
+          str += this.space[2] + "return this.init({\n";
         }
       }
 
@@ -199,7 +199,7 @@ export class AutoGenerator {
     // add all the fields
     let str = space[0];
     const fields = _.keys(this.tables[table]);
-    fields.forEach((field, index) => {
+    _.uniqBy([...fields.filter(f => this.foreignKeys[table][f]), ...fields], (f) => this.getFieldName(f)).forEach((field, index) => {
       timestamps ||= this.isTimestampField(field);
       paranoid ||= this.isParanoidField(field);
 
@@ -606,11 +606,14 @@ export class AutoGenerator {
 
   private getTypeScriptCreationOptionalFields(table: string): Array<string> {
     const fields = _.keys(this.tables[table]);
-    return fields.filter((field): boolean => {
+
+    const filterFn = (field: string): boolean => {
       const fieldObj = this.tables[table][field];
       return fieldObj.allowNull || (!!fieldObj.defaultValue || fieldObj.defaultValue === "") || fieldObj.autoIncrement
         || this.isTimestampField(field);
-    });
+    };
+
+    return _.uniq(fields.filter(filterFn));
   }
 
   /** Add schema to table so it will match the relation data.  Fixes mysql problem. */
@@ -721,15 +724,14 @@ export class AutoGenerator {
     const sp = this.space[1];
     const fields = _.keys(this.tables[table]);
     const notNull = isInterface ? '' : '!';
-    let str = '';
-    fields.forEach(field => {
-      if (!this.options.skipFields || !this.options.skipFields.includes(field)){
-        const name = this.getFieldName(this.quoteName(recase(this.options.caseProp, field)));
-        const isOptional = this.getTypeScriptFieldOptional(table, field);
-        str += `${sp}${name}${isOptional ? '?' : notNull}: ${this.getTypeScriptType(table, field)};\n`;
-      }
-    });
-    return str;
+    return _.uniqBy(
+      fields
+        .filter(field => !this.options.skipFields || !this.options.skipFields.includes(field))
+        .map(field => [field, this.getFieldName(this.quoteName(recase(this.options.caseProp, field)))])
+    , ([f, n]) => n).reduce((str, [field, name]) => {
+      const isOptional = this.getTypeScriptFieldOptional(table, field);
+      return str + `${sp}${name}${isOptional ? '?' : notNull}: ${this.getTypeScriptType(table, field)};\n`;
+    }, '');
   }
 
   private getTypeScriptFieldOptional(table: string, field: string) {
