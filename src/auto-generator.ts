@@ -13,6 +13,9 @@ export class AutoGenerator {
   relations: Relation[];
   space: string[];
   options: {
+    baseModelName?: string;
+    baseModelPath?: string;
+    header?: string;
     indentation?: number;
     spaces?: boolean;
     lang?: LangOption;
@@ -43,15 +46,31 @@ export class AutoGenerator {
     let header = "";
     const sp = this.space[1];
 
+    header += '/**\n' +
+    ' * This file is auto-generated and will be overwritten.\n' +
+    ' * To modify or extend this model, create a superclass that inherits it,\n' +
+    ' * outside of this directory, and use that one in your code instead.\n\n' +
+    ` * Generated @ ${new Date().toISOString()}\n` +
+    ' */\n\n';
+
+    if (this.options.header) {
+      header += this.options.header;
+    }
+
     if (this.options.lang === 'ts') {
-      header += "import * as Sequelize from 'sequelize';\n";
-      header += "import { DataTypes, Model, Optional } from 'sequelize';\n";
+      header += `import Sequelize, { DataTypes, ${!this.options.baseModelName ? 'Model, ' : ''}Optional } from 'sequelize';\n`;
+      if (this.options.baseModelPath) {
+        header += `import { ${this.options.baseModelName} } from '${this.options.baseModelPath}';\n`;
+      }
     } else if (this.options.lang === 'es6') {
       header += "const Sequelize = require('sequelize');\n";
+      if (this.options.baseModelPath) {
+        header += `const { ${this.options.baseModelName} } = require('${this.options.baseModelPath}');\n`;
+      }
       header += "module.exports = (sequelize, DataTypes) => {\n";
       header += sp + "return #TABLE#.init(sequelize, DataTypes);\n";
       header += "}\n\n";
-      header += "class #TABLE# extends Sequelize.Model {\n";
+      header += `class #TABLE# extends ${this.options.baseModelName || 'Sequelize.Model'} {\n`;
       header += sp + "static init(sequelize, DataTypes) {\n";
       if (this.options.useDefine) {
         header += sp + "return sequelize.define('#TABLE#', {\n";
@@ -60,8 +79,11 @@ export class AutoGenerator {
       }
     } else if (this.options.lang === 'esm') {
       header += "import _sequelize from 'sequelize';\n";
-      header += "const { Model, Sequelize } = _sequelize;\n\n";
-      header += "export default class #TABLE# extends Model {\n";
+      if (this.options.baseModelPath) {
+        header += `import { ${this.options.baseModelName} } from '${this.options.baseModelPath}';\n`;
+      }
+      header += `const { Sequelize${!this.options.baseModelName ? ', Model' : ''} } = _sequelize;\n\n`;
+      header += `export default class #TABLE# extends ${this.options.baseModelName || 'Model'} {\n`;
       header += sp + "static init(sequelize, DataTypes) {\n";
       if (this.options.useDefine) {
         header += sp + "return sequelize.define('#TABLE#', {\n";
@@ -105,20 +127,20 @@ export class AutoGenerator {
         const primaryKeys = this.getTypeScriptPrimaryKeys(table);
 
         if (primaryKeys.length) {
-          str += `export type #TABLE#Pk = ${primaryKeys.map((k) => `"${recase(this.options.caseProp, k)}"`).join(' | ')};\n`;
+          str += `export type #TABLE#Pk = ${primaryKeys.map((k) => `"${this.getFieldName(recase(this.options.caseProp, k))}"`).join(' | ')};\n`;
           str += `export type #TABLE#Id = #TABLE#[#TABLE#Pk];\n`;
         }
 
         const creationOptionalFields = this.getTypeScriptCreationOptionalFields(table);
 
         if (creationOptionalFields.length) {
-          str += `export type #TABLE#OptionalAttributes = ${creationOptionalFields.map((k) => `"${recase(this.options.caseProp, k)}"`).join(' | ')};\n`;
+          str += `export type #TABLE#OptionalAttributes = ${creationOptionalFields.map((k) => `"${this.getFieldName(recase(this.options.caseProp, k))}"`).join(' | ')};\n`;
           str += "export type #TABLE#CreationAttributes = Optional<#TABLE#Attributes, #TABLE#OptionalAttributes>;\n\n";
         } else {
           str += "export type #TABLE#CreationAttributes = #TABLE#Attributes;\n\n";
         }
 
-        str += "export class #TABLE# extends Model<#TABLE#Attributes, #TABLE#CreationAttributes> implements #TABLE#Attributes {\n";
+        str += `export class #TABLE# extends ${this.options.baseModelName || 'Model'}<#TABLE#Attributes, #TABLE#CreationAttributes> implements #TABLE#Attributes {\n`;
         str += this.addTypeScriptFields(table, false);
         str += "\n" + associations.str;
         str += "\n" + this.space[1] + "static initModel(sequelize: Sequelize.Sequelize): typeof #TABLE# {\n";
@@ -169,7 +191,7 @@ export class AutoGenerator {
     let paranoid = (this.options.additional && this.options.additional.paranoid === true) || false;
 
     // add all the fields
-    let str = '';
+    let str = space[0];
     const fields = _.keys(this.tables[table]);
     fields.forEach((field, index) => {
       timestamps ||= this.isTimestampField(field);
@@ -182,23 +204,23 @@ export class AutoGenerator {
     str = str.substring(0, str.length - 2) + "\n";
 
     // add the table options
-    str += space[1] + "}, {\n";
+    str += space[2] + "}, {\n";
     if (!this.options.useDefine) {
-      str += space[2] + "sequelize,\n";
+      str += space[3] + "sequelize,\n";
     }
-    str += space[2] + "tableName: '" + tableNameOrig + "',\n";
+    str += space[3] + "tableName: '" + tableNameOrig + "',\n";
 
     if (schemaName && this.dialect.hasSchema) {
-      str += space[2] + "schema: '" + schemaName + "',\n";
+      str += space[3] + "schema: '" + schemaName + "',\n";
     }
 
     if (this.hasTriggerTables[table]) {
-      str += space[2] + "hasTrigger: true,\n";
+      str += space[3] + "hasTrigger: true,\n";
     }
 
-    str += space[2] + "timestamps: " + timestamps + ",\n";
+    str += space[3] + "timestamps: " + timestamps + ",\n";
     if (paranoid) {
-      str += space[2] + "paranoid: true,\n";
+      str += space[3] + "paranoid: true,\n";
     }
 
     // conditionally add additional options
@@ -207,15 +229,15 @@ export class AutoGenerator {
       _.each(this.options.additional, (value, key) => {
         if (key === 'name') {
           // name: true - preserve table name always
-          str += space[2] + "name: {\n";
-          str += space[3] + "singular: '" + table + "',\n";
-          str += space[3] + "plural: '" + table + "'\n";
-          str += space[2] + "},\n";
+          str += space[3] + "name: {\n";
+          str += space[4] + "singular: '" + table + "',\n";
+          str += space[4] + "plural: '" + table + "'\n";
+          str += space[3] + "},\n";
         } else if (key === "timestamps" || key === "paranoid") {
           // handled above
         } else {
           value = _.isBoolean(value) ? value : ("'" + value + "'");
-          str += space[2] + key + ": " + value + ",\n";
+          str += space[3] + key + ": " + value + ",\n";
         }
       });
     }
@@ -225,9 +247,9 @@ export class AutoGenerator {
       str += this.addIndexes(table);
     }
 
-    str = space[2] + str.trim();
+    str = space[3] + str.trim();
     str = str.substring(0, str.length - 1);
-    str += "\n" + space[1] + "}";
+    str += "\n" + space[2] + "}";
 
     return str;
   }
@@ -253,7 +275,7 @@ export class AutoGenerator {
       fieldObj.foreignKey = foreignKey;
     }
 
-    const fieldName = recase(this.options.caseProp, field);
+    const fieldName = this.getFieldName(recase(this.options.caseProp, field));
     let str = this.quoteName(fieldName) + ": {\n";
 
     const quoteWrapper = '"';
@@ -289,7 +311,7 @@ export class AutoGenerator {
         if (foreignKey && foreignKey.isForeignKey) {
           str += space[4] + "references: {\n";
           str += space[5] + "model: \'" + fieldObj[attr].foreignSources.target_table + "\',\n";
-          str += space[5] + "key: \'" + fieldObj[attr].foreignSources.target_column + "\'\n";
+          str += space[5] + "key: \'" + this.getFieldName(fieldObj[attr].foreignSources.target_column) + "\'\n";
           str += space[4] + "}";
         } else {
           return true;
@@ -696,7 +718,7 @@ export class AutoGenerator {
     let str = '';
     fields.forEach(field => {
       if (!this.options.skipFields || !this.options.skipFields.includes(field)){
-        const name = this.quoteName(recase(this.options.caseProp, field));
+        const name = this.getFieldName(this.quoteName(recase(this.options.caseProp, field)));
         const isOptional = this.getTypeScriptFieldOptional(table, field);
         str += `${sp}${name}${isOptional ? '?' : notNull}: ${this.getTypeScriptType(table, field)};\n`;
       }
@@ -741,6 +763,10 @@ export class AutoGenerator {
       jsType = 'any';
     }
     return jsType;
+  }
+
+  getFieldName(name: string) {
+    return !!name.match(/_Id$/) ? name.replace('_Id', 'Id') : name;
   }
 
   private getEnumValues(fieldObj: TSField): string[] {

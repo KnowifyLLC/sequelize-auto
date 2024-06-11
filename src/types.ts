@@ -129,6 +129,10 @@ export declare type CaseFileOption = "k" | CaseOption;
 
 export interface AutoOptions {
   additional?: any;
+  /** Base model */
+  baseModelName?: string;
+  /** Base model import path */
+  baseModelPath?: string;
   /** Case of file names */
   caseFile?: CaseFileOption;
   /** Case of model names */
@@ -145,6 +149,8 @@ export interface AutoOptions {
   dialectOptions?: { options?: any; };
   /** Where to write the model files */
   directory: string;
+  /** File header content */
+  header?: string;
   /** Database host */
   host?: string;
   /** Number of spaces or tabs to indent (default 2) */
