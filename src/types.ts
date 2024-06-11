@@ -159,6 +159,8 @@ export interface AutoOptions {
   lang?: LangOption;
   /** Whether to avoid creating alias property in relations */
   noAlias?: boolean;
+  /** Whether to skip generating associations */
+  noAssociations?: boolean;
   /** Whether to skip writing index information */
   noIndexes?: boolean;
   /** Whether to skip writing the init-models file */

@@ -28,6 +28,7 @@ export class AutoGenerator {
     singularize: boolean;
     useDefine: boolean;
     noIndexes?: boolean;
+    noAssociations?: boolean;
   };
 
   constructor(tableData: TableData, dialect: DialectOptions, options: AutoOptions) {
@@ -109,7 +110,7 @@ export class AutoGenerator {
       const [schemaName, tableNameOrig] = qNameSplit(table);
       const tableName = makeTableName(this.options.caseModel, tableNameOrig, this.options.singularize, this.options.lang);
 
-      if (this.options.lang === 'ts') {
+      if (this.options.lang === 'ts' && !this.options.noAssociations) {
         const associations = this.addTypeScriptAssociationMixins(table);
         const needed = _.keys(associations.needed).sort();
         needed.forEach(fkTable => {
