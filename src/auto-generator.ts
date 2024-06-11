@@ -132,7 +132,7 @@ export class AutoGenerator {
 
         if (primaryKeys.length) {
           str += `export type #TABLE#Pk = ${primaryKeys.map((k) => `"${this.getFieldName(recase(this.options.caseProp, k))}"`).join(' | ')};\n`;
-          str += `export type #TABLE#Id = #TABLE#[#TABLE#Pk];\n`;
+          str += `export type #TABLE#Id = #TABLE#Model[#TABLE#Pk];\n`;
         }
 
         const creationOptionalFields = this.getTypeScriptCreationOptionalFields(table);
@@ -144,12 +144,12 @@ export class AutoGenerator {
           str += "export type #TABLE#CreationAttributes = #TABLE#Attributes;\n\n";
         }
 
-        str += `export class #TABLE# extends ${this.options.baseModelName || 'Model'}<#TABLE#Attributes, #TABLE#CreationAttributes> implements #TABLE#Attributes {\n`;
+        str += `export class #TABLE#Model extends ${this.options.baseModelName || 'Model'}<#TABLE#Attributes, #TABLE#CreationAttributes> implements #TABLE#Attributes {\n`;
         str += this.addTypeScriptFields(table, false);
         if (!this.options.noAssociations) {
           str += "\n" + associations.str;
         }
-        str += "\n" + this.space[1] + "static initModel(sequelize: Sequelize.Sequelize): typeof #TABLE# {\n";
+        str += "\n" + this.space[1] + "static initModel(sequelize: Sequelize.Sequelize): typeof #TABLE#Model {\n";
 
         if (this.options.useDefine) {
           str += this.space[2] + "return sequelize.define('#TABLE#', {\n";
