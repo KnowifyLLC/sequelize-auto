@@ -766,7 +766,7 @@ export class AutoGenerator {
   }
 
   getFieldName(name: string) {
-    return !!name.match(/_Id$/) ? name.replace('_Id', 'Id') : name;
+    return !!name.match(/_Id/) ? name.replace(/_Id_?/, 'Id') : name;
   }
 
   private getEnumValues(fieldObj: TSField): string[] {
