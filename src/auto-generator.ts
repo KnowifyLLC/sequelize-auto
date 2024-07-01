@@ -723,14 +723,14 @@ export class AutoGenerator {
   private addTypeScriptFields(table: string, isInterface: boolean) {
     const sp = this.space[1];
     const fields = _.keys(this.tables[table]);
-    const notNull = isInterface ? '' : '!';
+    const notNull = ''; // isInterface ? '' : '!';
     return _.uniqBy(
       fields
         .filter(field => !this.options.skipFields || !this.options.skipFields.includes(field))
         .map(field => [field, this.getFieldName(this.quoteName(recase(this.options.caseProp, field)))])
     , ([f, n]) => n).reduce((str, [field, name]) => {
       const isOptional = this.getTypeScriptFieldOptional(table, field);
-      return str + `${sp}${name}${isOptional ? '?' : notNull}: ${this.getTypeScriptType(table, field)};\n`;
+      return str + `${isInterface ? '' : 'declare '}${sp}${name}${isOptional ? '?' : notNull}: ${this.getTypeScriptType(table, field)};\n`;
     }, '');
   }
 
