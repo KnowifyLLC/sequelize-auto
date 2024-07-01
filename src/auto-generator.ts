@@ -730,7 +730,7 @@ export class AutoGenerator {
         .map(field => [field, this.getFieldName(this.quoteName(recase(this.options.caseProp, field)))])
     , ([f, n]) => n).reduce((str, [field, name]) => {
       const isOptional = this.getTypeScriptFieldOptional(table, field);
-      return str + `${isInterface ? '' : 'declare '}${sp}${name}${isOptional ? '?' : notNull}: ${this.getTypeScriptType(table, field)};\n`;
+      return str + `${sp}${isInterface ? '' : 'declare '}${name}${isOptional ? '?' : notNull}: ${this.getTypeScriptType(table, field)};\n`;
     }, '');
   }
 
