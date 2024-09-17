@@ -141,6 +141,8 @@ export interface AutoOptions {
   caseProp?: CaseOption;
   /** Close connection after export (default true) */
   closeConnectionAutomatically?: boolean;
+  /** Rename columns */
+  fieldAliases?: { [modelName: string]: { [rawName: string]: string } };
   /** Database name */
   database?: string;
   /** Database dialect */

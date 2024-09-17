@@ -15,6 +15,7 @@ export class AutoGenerator {
   options: {
     baseModelName?: string;
     baseModelPath?: string;
+    fieldAliases?: { [tableName: string]: { [rawFieldName: string]: string; } };
     header?: string;
     indentation?: number;
     spaces?: boolean;
@@ -131,14 +132,14 @@ export class AutoGenerator {
         const primaryKeys = this.getTypeScriptPrimaryKeys(table);
 
         if (primaryKeys.length) {
-          str += `export type #TABLE#Pk = ${primaryKeys.map((k) => `"${this.getFieldName(recase(this.options.caseProp, k))}"`).join(' | ')};\n`;
+          str += `export type #TABLE#Pk = ${primaryKeys.map((k) => `"${this.getFieldName(recase(this.options.caseProp, k), table)}"`).join(' | ')};\n`;
           str += `export type #TABLE#Id = #TABLE#Model[#TABLE#Pk];\n`;
         }
 
         const creationOptionalFields = this.getTypeScriptCreationOptionalFields(table);
 
         if (creationOptionalFields.length) {
-          str += `export type #TABLE#OptionalAttributes = ${creationOptionalFields.map((k) => `"${this.getFieldName(recase(this.options.caseProp, k))}"`).join(' | ')};\n`;
+          str += `export type #TABLE#OptionalAttributes = ${creationOptionalFields.map((k) => `"${this.getFieldName(recase(this.options.caseProp, k), table)}"`).join(' | ')};\n`;
           str += "export type #TABLE#CreationAttributes = Optional<#TABLE#Attributes, #TABLE#OptionalAttributes>;\n\n";
         } else {
           str += "export type #TABLE#CreationAttributes = #TABLE#Attributes;\n\n";
@@ -199,7 +200,7 @@ export class AutoGenerator {
     // add all the fields
     let str = space[0];
     const fields = _.keys(this.tables[table]);
-    _.uniqBy([...fields.filter(f => this.foreignKeys[table][f]), ...fields], (f) => this.getFieldName(f)).forEach((field, index) => {
+    _.uniqBy([...fields.filter(f => this.foreignKeys[table][f]), ...fields], (f) => this.getFieldName(f, table)).forEach((field, index) => {
       timestamps ||= this.isTimestampField(field);
       paranoid ||= this.isParanoidField(field);
 
@@ -281,7 +282,7 @@ export class AutoGenerator {
       fieldObj.foreignKey = foreignKey;
     }
 
-    const fieldName = this.getFieldName(recase(this.options.caseProp, field));
+    const fieldName = this.getFieldName(recase(this.options.caseProp, field), table);
     let str = this.quoteName(fieldName) + ": {\n";
 
     const quoteWrapper = '"';
@@ -317,7 +318,7 @@ export class AutoGenerator {
         if (foreignKey && foreignKey.isForeignKey) {
           str += space[4] + "references: {\n";
           str += space[5] + "model: \'" + fieldObj[attr].foreignSources.target_table + "\',\n";
-          str += space[5] + "key: \'" + this.getFieldName(fieldObj[attr].foreignSources.target_column) + "\'\n";
+          str += space[5] + "key: \'" + this.getFieldName(fieldObj[attr].foreignSources.target_column, table) + "\'\n";
           str += space[4] + "}";
         } else {
           return true;
@@ -727,7 +728,7 @@ export class AutoGenerator {
     return _.uniqBy(
       fields
         .filter(field => !this.options.skipFields || !this.options.skipFields.includes(field))
-        .map(field => [field, this.getFieldName(this.quoteName(recase(this.options.caseProp, field)))])
+        .map(field => [field, this.getFieldName(this.quoteName(recase(this.options.caseProp, field)), table)])
     , ([f, n]) => n).reduce((str, [field, name]) => {
       const isOptional = this.getTypeScriptFieldOptional(table, field);
       return str + `${sp}${isInterface ? '' : 'declare '}${name}${isOptional ? '?' : notNull}: ${this.getTypeScriptType(table, field)};\n`;
@@ -773,8 +774,9 @@ export class AutoGenerator {
     return jsType;
   }
 
-  getFieldName(name: string) {
-    return !!name.match(/_Id/) ? name.replace(/_Id_?/, 'Id') : name;
+  getFieldName(name: string, table: string) {
+    const renames = (this.options.fieldAliases || {})[table] || {};
+    return renames[name] || (!!name.match(/_Id/) ? name.replace(/_Id_?/, 'Id') : name);
   }
 
   private getEnumValues(fieldObj: TSField): string[] {

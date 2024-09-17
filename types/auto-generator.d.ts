@@ -25,6 +25,11 @@ export declare class AutoGenerator {
     options: {
         baseModelName?: string;
         baseModelPath?: string;
+        fieldAliases?: {
+            [tableName: string]: {
+                [rawFieldName: string]: string;
+            };
+        };
         header?: string;
         indentation?: number;
         spaces?: boolean;
@@ -59,7 +64,7 @@ export declare class AutoGenerator {
     private getTypeScriptFieldOptional;
     private getTypeScriptType;
     private getTypeScriptFieldType;
-    getFieldName(name: string): string;
+    getFieldName(name: string, table: string): string;
     private getEnumValues;
     private isTimestampField;
     private isParanoidField;
