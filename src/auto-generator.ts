@@ -200,7 +200,7 @@ export class AutoGenerator {
     // add all the fields
     let str = space[0];
     const fields = _.keys(this.tables[table]);
-    _.uniqBy([...fields.filter(f => this.foreignKeys[table][f]), ...fields], (f) => this.getFieldName(f, table)).forEach((field, index) => {
+    _.uniqBy([...fields.filter(f => this.foreignKeys[table]?.[f]), ...fields], (f) => this.getFieldName(f, table)).forEach((field, index) => {
       timestamps ||= this.isTimestampField(field);
       paranoid ||= this.isParanoidField(field);
 
